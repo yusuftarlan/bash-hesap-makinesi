@@ -1,23 +1,43 @@
 #!/bin/bash
 
+log_yaz() {
+    local islem_detayi=$1
+    echo "$(date '+%Y-%m-%d %H:%M:%S') -> $islem_detayi" >> log.txt
+}
 
-aritmetik_ifade() { #Ornek (2+6*7)/8
+son_islem_getir() {
+    if [[ -f log.txt ]]; then
+        echo -e "\n--- SON 3 İŞLEM GEÇMİŞİ ---"
+        tail -n 3 log.txt
+        echo "--------------------------"
+    else
+        echo -e "\n(Henüz işlem geçmişi bulunmuyor.)"
+    fi
+}
+
+aritmetik_ifade() {
     while true; do
         read -p "İfade girin (çıkış: q): " a
         if [[ "$a" == "q" || "$a" == "Q" ]]; then
+            clear
             break
         fi
-        echo "scale=5; $a" | bc -l  
+        sonuc=$(echo "scale=5; $a" | bc -l)
+        echo "$sonuc"
+        log_yaz "Aritmetik: $a = $sonuc"
     done
 }
 
-us_al() { #Ornek 2 3 -> Sonuc 8
+us_al() {
     while true; do
         read -p "taban & üs (çıkış: q): " a b
         if [[ "$a" == "q" || "$a" == "Q" ]]; then
+            clear
             break
         fi
-        echo "scale=5; $a^$b" | bc -l  
+        sonuc=$(echo "scale=5; $a^$b" | bc -l)
+        echo "$sonuc"
+        log_yaz "Üs Alma: $a^$b = $sonuc"
     done
 }
 
@@ -25,9 +45,12 @@ karakok() {
     while true; do
         read -p "Sayi (çıkış: q): " a 
         if [[ "$a" == "q" || "$a" == "Q" ]]; then
+            clear
             break
         fi
-        echo "scale=5; sqrt($a)" | bc -l    
+        sonuc=$(echo "scale=5; sqrt($a)" | bc -l)
+        echo "$sonuc"
+        log_yaz "Karekök: sqrt($a) = $sonuc"
     done
 }
 
@@ -35,11 +58,16 @@ trigonometri() {
     while true; do
         read -p "sin/cos x (örn: sin 0.5) (çıkış: q): " a b
         if [[ "$a" == "q" || "$a" == "Q" ]]; then
+            clear
             break
         elif [[ "$a" == "sin" || "$a" == "SIN" ]]; then
-            echo "scale=5; s($b)" | bc -l
+            sonuc=$(echo "scale=5; s($b)" | bc -l)
+            echo "$sonuc"
+            log_yaz "Trigonometri: sin($b) = $sonuc"
         elif [[ "$a" == "cos" || "$a" == "COS" ]]; then
-            echo "scale=5; c($b)" | bc -l
+            sonuc=$(echo "scale=5; c($b)" | bc -l)
+            echo "$sonuc"
+            log_yaz "Trigonometri: cos($b) = $sonuc"
         else
             echo "Geçersiz (sadece sin/cos desteklenir)"
         fi  
@@ -72,12 +100,10 @@ degerHesapla(){
 
     read -p "x degeri (çıkış: q): " x
     if [[ "$x" == "q" || "$x" == "Q" ]]; then
+            clear
             return 1
     fi
     
-    # Polinom hesaplama
-    # **Not:** Burada Bash'in kendi aritmetik işlemi kullanılır.
-    # Büyük sayılar veya ondalıklı sayılar için bc ile yeniden yazmak daha güvenilir olabilir.
     for (( i=0; i < $numParam; i++ )); do
         (( sonuc += params[j] * x**i ))
         ((j-=1))
@@ -86,19 +112,18 @@ degerHesapla(){
     echo "--------------"
     echo "| f($x) = $sonuc |"
     echo "--------------"
+    log_yaz "Polinom Hesap: f($x) = $sonuc"
 }
 
 paraDegerHesapla(){
-    x=${1}              # İlk parametre = x değeri
-    shift               # x'i array'den çıkar
-    params=("$@")       # Geriye kalan parametreler = katsayılar
+    x=${1}
+    shift
+    params=("$@")
 
     numParam=${#params[@]}
-    # Horner metodu (veya bir döngü) ile bc kullanarak hesaplama
     ifade=""
     for (( i=0; i<numParam; i++ )); do
-        j=$((numParam - 1 - i)) # Katsayı indeksi (params[j] katsayı, i üs)
-        # Bash aritmetiği yerine bc kullanılıyor
+        j=$((numParam - 1 - i)) 
         if [ "$ifade" = "" ]; then
              ifade="${params[j]}*($x^$i)"
         else
@@ -106,7 +131,6 @@ paraDegerHesapla(){
         fi
     done
 
-    # bc ile hesapla ve sonucu döndür
     echo "scale=5; $ifade" | bc -l
 }
 
@@ -115,38 +139,30 @@ ciz(){
     params=("$@")
     read -p "Aralık girin (başlangıç bitiş): " aD uD
     clear
-    polinomYapisi "${params[@]}"  # Polinomu ekrana yazdırma
+    polinomYapisi "${params[@]}"
     scale=0.2
     
-    # Eksen etiketleri
     printf "\n"
     printf "%5s | %s\n" "x" "y ekseni (*)"
     printf "______|____________________________________________________________________\n"
     
     for ((i=$aD; i <= $uD; i++)); do
-        y_float=$(paraDegerHesapla "$i" "${params[@]}") # bc'den float değer al
+        y_float=$(paraDegerHesapla "$i" "${params[@]}")
         
-        # Ölçekleme ve tam sayıya çevirme
         y_scaled=$(echo "$y_float * $scale" | bc -l)
-        # printf kullanarak yuvarlama yapmak yerine sadece tam kısmı alalım
         y_int=${y_scaled%.*}
         
-        # Negatif değerler için y-ekseninin soluna * koyalım
         if (( y_int < 0 )); then
             abs_y_int=$(( -y_int ))
             
-            # x değeri ve boşluklar
             printf "%4d|" "$i"
             
-            # Sol taraf boşluk
             for ((j=0; j < abs_y_int; j++)); do
                 printf " "
             done
-            # Sol tarafa * ve sağ tarafa sıfır boşluk
             printf "*\n"
             
         else
-            # Pozitif değerler için
             printf "%4d|" "$i"
             j=0
             while (( j<y_int )); do
@@ -170,6 +186,7 @@ polinom_hesap(){
         fi
     done
 }
+
 grafik_ciz(){
     echo "Polinom katsayılarını girin (sabit katsayı en sonda olmalı, örn: 1 2 3 4):"
     read -a params
@@ -177,22 +194,25 @@ grafik_ciz(){
     ciz "${params[@]}"
 }
 
-# --- YENİ EKLENEN FONKSİYONLAR ---
-
 logaritma() {
     while true; do
         read -p "İşlem (ln/exp) ve Sayı (örn: ln 10) (çıkış: q): " islem sayi
         
         if [[ "$islem" == "q" || "$islem" == "Q" ]]; then
+            clear
             break
         fi
 
         case "$islem" in
             ln)
-                echo "ln($sayi) = $(echo "scale=5; l($sayi)" | bc -l)"
+                sonuc=$(echo "scale=5; l($sayi)" | bc -l)
+                echo "ln($sayi) = $sonuc"
+                log_yaz "Logaritma: ln($sayi) = $sonuc"
                 ;;
             exp)
-                echo "e^$sayi = $(echo "scale=5; e($sayi)" | bc -l)"
+                sonuc=$(echo "scale=5; e($sayi)" | bc -l)
+                echo "e^$sayi = $sonuc"
+                log_yaz "Üstel: e^$sayi = $sonuc"
                 ;;
             *)
                 echo "Geçersiz işlem. Lütfen 'ln' veya 'exp' girin."
@@ -201,11 +221,26 @@ logaritma() {
     done
 }
 
+fact_hesapla() {
+    local n=$1
+    local sonuc=1
+    
+    if (( n <= 1 )); then
+        echo 1
+    else
+        for (( i=1; i<=n; i++ )); do
+            (( sonuc *= i ))
+        done
+        echo $sonuc
+    fi
+}
+
 faktoriyel() {
     while true; do
         read -p "Faktöriyelini hesaplamak istediğiniz tam sayıyı girin (çıkış: q): " n
         
         if [[ "$n" == "q" || "$n" == "Q" ]]; then
+            clear
             break
         fi
         
@@ -224,11 +259,9 @@ faktoriyel() {
             continue
         fi
 
-        sonuc=1
-        for (( i=1; i<=n; i++ )); do
-            (( sonuc *= i ))
-        done
+        sonuc=$(fact_hesapla "$n")
         echo "$n! = $sonuc"
+        log_yaz "Faktöriyel: $n! = $sonuc"
     done
 }
 
@@ -241,19 +274,20 @@ derece_radyan_donusum() {
         read -p "Dönüşüm (d2r/r2d) ve Değer (örn: d2r 90) (çıkış: q): " yon deger
         
         if [[ "$yon" == "q" || "$yon" == "Q" ]]; then
+            clear
             break
         fi
 
         case "$yon" in
             d2r)
-                # derece * (PI / 180)
-                radyan=$(echo "scale=5; $deger * ($PI / 180)" | bc -l)
-                echo "$deger derece = $radyan radyan"
+                sonuc=$(echo "scale=5; $deger * ($PI / 180)" | bc -l)
+                echo "$deger derece = $sonuc radyan"
+                log_yaz "Dönüşüm: $deger Derece -> $sonuc Radyan"
                 ;;
             r2d)
-                # radyan * (180 / PI)
-                derece=$(echo "scale=5; $deger * (180 / $PI)" | bc -l)
-                echo "$deger radyan = $derece derece"
+                sonuc=$(echo "scale=5; $deger * (180 / $PI)" | bc -l)
+                echo "$deger radyan = $sonuc derece"
+                log_yaz "Dönüşüm: $deger Radyan -> $sonuc Derece"
                 ;;
             *)
                 echo "Geçersiz yön. Lütfen 'd2r' veya 'r2d' girin."
@@ -262,14 +296,198 @@ derece_radyan_donusum() {
     done
 }
 
+mod_alma() {
+    echo -e "\n--- Mod Alma (Kalan Bulma) ---"
+    while true; do
+        read -p "Modu alınacak sayı ve bölen (örn: 10 3) (çıkış: q): " a b
+        if [[ "$a" == "q" || "$a" == "Q" ]]; then 
+        clear 
+        break; 
+        fi
+        
+        if [[ -z "$b" ]]; then
+            echo "Lütfen iki sayı girin (Bölünen ve Bölen)."
+            continue
+        fi
 
-# --- ANA DÖNGÜ VE MENÜ ---
+        if [ "$b" -eq 0 ]; then
+            echo "Hata: Bir sayı 0'a bölünemez (mod alınamaz)."
+            continue
+        fi
+        
+        sonuc=$(( a % b ))
+        
+        echo "-----------------------------"
+        echo "$a % $b = $sonuc"
+        echo "-----------------------------"
+        log_yaz "Mod: $a % $b = $sonuc"
+    done
+}
+
+taban_donusum() {
+    while true; do
+        echo -e "\n--- Taban Aritmetiği ve Dönüşüm ---"
+        echo "Örnek Girişler -> Binary: 2, Octal: 8, Decimal: 10, Hex: 16"
+        
+        read -p "Giriş Tabanı Nedir? (Çıkış için q): " giris_tabani
+        if [[ "$giris_tabani" == "q" || "$giris_tabani" == "Q" ]]; then 
+        clear 
+        break; 
+        fi
+
+        read -p "Hedef (Çıkış) Tabanı Nedir?: " hedef_taban
+
+        read -p "Dönüştürülecek Sayı: " sayi
+        
+        sayi=${sayi^^}
+        
+        sonuc=$(echo "obase=$hedef_taban; ibase=$giris_tabani; $sayi" | bc 2>/dev/null)
+        
+        if [[ -z "$sonuc" ]]; then
+            echo "Hata: Geçersiz sayı veya taban girişi yaptınız!"
+        else
+            echo "-----------------------------------------"
+            echo "Sonuç: ($sayi) base-$giris_tabani  ==>  ($sonuc) base-$hedef_taban"
+            echo "-----------------------------------------"
+            log_yaz "Taban: ($sayi) taban-$giris_tabani -> ($sonuc) taban-$hedef_taban"
+        fi
+    done
+}
+
+perm_komb() {
+    while true; do
+        echo -e "\n--- Permütasyon (nPr) ve Kombinasyon (nCr) ---"
+        echo "  1) Permütasyon Hesapla (Sıralama)"
+        echo "  2) Kombinasyon Hesapla (Seçme)"
+        read -p "Seçim (çıkış: q): " secim
+        
+        if [[ "$secim" == "q" || "$secim" == "Q" ]]; then 
+        clear 
+        break;
+        fi
+        
+        if [[ "$secim" == "1" || "$secim" == "2" ]]; then
+            read -p "n ve r değerlerini girin (örn: 5 2): " n r
+            
+            if (( n < r )); then
+                echo "Hata: 'n' sayısı 'r' sayısından küçük olamaz."
+                continue
+            fi
+            
+            pay=$(fact_hesapla "$n")          
+            fark=$(( n - r ))
+            payda_p=$(fact_hesapla "$fark")   
+            
+            if [[ "$secim" == "1" ]]; then
+                sonuc=$(echo "$pay / $payda_p" | bc)
+                echo "P($n, $r) = $sonuc"
+                log_yaz "Permütasyon: P($n,$r) = $sonuc"
+                
+            elif [[ "$secim" == "2" ]]; then
+                payda_r=$(fact_hesapla "$r")
+                tam_payda=$(( payda_r * payda_p ))
+                sonuc=$(echo "$pay / $tam_payda" | bc)
+                echo "C($n, $r) = $sonuc"
+                log_yaz "Kombinasyon: C($n,$r) = $sonuc"
+            fi
+        else
+            echo "Geçersiz seçim."
+        fi
+    done
+}
+
+ortalama_hesapla() {
+    while true; do
+        echo -e "\n--- Ortalama Hesaplama Modu ---"
+        echo "Sayıları sırayla girin."
+        echo "  [b] -> Hesapla ve Yeni İşleme Geç"
+        echo "  [q] -> Ana Menüye Çık"
+        
+        toplam=0
+        adet=0
+        
+        while true; do
+            read -p "Sayi $(($adet + 1)): " giris
+            
+            if [[ "$giris" == "q" || "$giris" == "Q" ]]; then
+                clear 
+                return 0
+            fi
+            
+            if [[ "$giris" == "b" || "$giris" == "B" ]]; then
+                if (( adet > 0 )); then
+                    sonuc=$(echo "scale=2; $toplam / $adet" | bc -l)
+                    echo "-----------------------------"
+                    echo "Sonuçlar:"
+                    echo "  Adet: $adet"
+                    echo "  Toplam: $toplam"
+                    echo "  Ortalama: $sonuc"
+                    echo "-----------------------------"
+                    log_yaz "İstatistik: $adet sayının ortalaması = $sonuc"
+                    echo "Yeni hesaplama başlıyor..."
+                    sleep 1
+                else
+                    echo "Hiç sayı girmediniz! Yeni işlem başlatılıyor."
+                fi
+                break
+            fi
+            
+            if ! [[ "$giris" =~ ^-?[0-9]*\.?[0-9]+$ ]]; then
+                echo "Hata: Geçersiz giriş. Lütfen sayı girin, 'b' ile hesaplayın veya 'q' ile çıkın."
+                continue
+            fi
+            
+            toplam=$(echo "$toplam + $giris" | bc -l)
+            ((adet++))
+        done
+    done
+}
+
+log_terminal_yaz() {
+    while true; do
+        echo -e "\n--- Log Görüntüleme ---"
+        read -p "Kaç satır görmek istiyorsunuz? (çıkış: q): " satir_sayisi
+        
+        if [[ "$satir_sayisi" == "q" || "$satir_sayisi" == "Q" ]]; then
+            clear
+            break
+        fi
+        
+        if ! [[ "$satir_sayisi" =~ ^[0-9]+$ ]]; then
+            echo "Geçersiz giriş. Lütfen pozitif bir tam sayı girin."
+            continue
+        fi
+        
+        if [[ -f log.txt ]]; then
+            echo -e "\n--- Son $satir_sayisi İşlem ---"
+            tail -n "$satir_sayisi" log.txt
+            echo "-----------------------------"
+        else
+            echo "Log dosyası bulunamadı."
+        fi
+    done
+}
+
+clear
+
+cat << "EOF"
+
+      ____            _        _____      _            _       _             
+     |  _ \          | |      / ____|    | |          | |     | |            
+     | |_) | __ _ ___| |__   | |     __ _| | ___ _   _| | __ _| |_ ___  _ __ 
+     |  _ < / _` / __| '_ \  | |    / _` | |/ __| | | | |/ _` | __/ _ \| '__|
+     | |_) | (_| \__ \ | | | | |___| (_| | | (__| |_| | | (_| | || (_) | |   
+     |____/ \__,_|___/_| |_|  \_____\__,_|_|\___|\__,_|_|\__,_|\__\___/|_|   
+                                                                             
+
+EOF
+
+son_islem_getir
 
 while true; do
-    echo -e "\n------ Hesap Makinesi ------"
+    echo -e "\n------ Hesap Makine Menüsü ------"
     echo "Lütfen bir seçenek numarası girin ve 'q' ile alt menülerden çıkın."
     echo "--------------------------------------------------------------------------------------"
-    
     
     echo "1) Aritmetik İfade (Örn: (2+6)*7/8)"
     echo "2) Üs Alma (Örn: 2 3 -> 8)"
@@ -280,6 +498,11 @@ while true; do
     echo "7) Logaritma/Üstel (Örn: ln 10 veya exp 2)"
     echo "8) Faktöriyel (Örn: 5 -> 120)"
     echo "9) Derece/Radyan Dönüşümü (Örn: d2r 90 veya r2d 1.57)"
+    echo "10) Mod Alma (Kalan Bulma)"
+    echo "11) Taban Dönüşümü (Binary/Octal/Decimal/Hex)"  
+    echo "12) Permütasyon/Kombinasyon (nPr / nCr)"
+    echo "13) Ortalama Hesaplama (İstatistik)"
+    echo "14) Log Görüntüleme (İşlem Geçmişi)"
     echo "0) Çıkış"
     echo "--------------------------------------------------------------------------------------"
     echo -n "Seçim yap: "
@@ -312,6 +535,21 @@ while true; do
         ;;
     9)
         derece_radyan_donusum
+        ;;
+    10) 
+        mod_alma
+        ;;
+    11)  
+        taban_donusum
+        ;;
+    12)
+        perm_komb
+        ;;
+    13) 
+        ortalama_hesapla
+        ;;
+    14)
+        log_terminal_yaz
         ;;
     0)
         echo "Hesap makinesi kapatılıyor. Görüşmek üzere!"
