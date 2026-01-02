@@ -3,7 +3,7 @@
 Bash ile yazılmış, terminal üzerinde çalışan gelişmiş bir hesap makinesi uygulamasıdır. Temel aritmetik işlemlerden polinom grafik çizimine kadar birçok matematiksel işlemi destekler.
 
 ![Bash](https://img.shields.io/badge/Bash-5.0+-4EAA25?style=flat-square&logo=gnu-bash&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
+
 
 ---
 
@@ -15,7 +15,7 @@ Bash ile yazılmış, terminal üzerinde çalışan gelişmiş bir hesap makines
 - [Kullanım](#-kullanım)
 - [Ekran Görüntüleri](#-ekran-görüntüleri)
 - [Katkıda Bulunma](#-katkıda-bulunma)
-- [Lisans](#-lisans)
+
 
 ---
 
@@ -203,9 +203,7 @@ BashHesapMakinesi/
 
 ---
 
-## 📄 Lisans
 
-Bu proje MIT Lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakınız.
 
 ---
 
